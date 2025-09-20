@@ -1,89 +1,113 @@
+import { $dynamicClient } from '@/app/_layout';
 import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
+import { LoadingOverlay } from '@/components/ui/loading-overlay';
 import { Text } from '@/components/ui/text';
-import { THEME } from '@/lib/theme';
-import { Link, Stack } from 'expo-router';
-import { MoonStarIcon, StarIcon, SunIcon } from 'lucide-react-native';
-import { useColorScheme } from 'nativewind';
+import { useCtxWallet } from '@/context/wallet-context';
+import { dynamicXYZ } from '@/lib/dynamic-utils';
+import { cn } from '@/lib/utils';
+import { Stack, useRouter } from 'expo-router';
 import * as React from 'react';
-import { Image, type ImageStyle, View } from 'react-native';
-
-const LOGO = {
-  light: require('@/assets/images/react-native-reusables-light.png'),
-  dark: require('@/assets/images/react-native-reusables-dark.png'),
-};
-
-const SCREEN_OPTIONS = {
-  light: {
-    title: 'React Native Reusables',
-    headerTransparent: true,
-    headerShadowVisible: true,
-    headerStyle: { backgroundColor: THEME.light.background },
-    headerRight: () => <ThemeToggle />,
-  },
-  dark: {
-    title: 'React Native Reusables',
-    headerTransparent: true,
-    headerShadowVisible: true,
-    headerStyle: { backgroundColor: THEME.dark.background },
-    headerRight: () => <ThemeToggle />,
-  },
-};
-
-const IMAGE_STYLE: ImageStyle = {
-  height: 76,
-  width: 76,
-};
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Screen() {
-  const { colorScheme } = useColorScheme();
+  const hRouter = useRouter();
+
+  const hCtxWallet = useCtxWallet();
+
+  const [sReadyState, setReadyState] = useState({
+    sdkReady: false,
+    authChecked: false,
+    authReady: false,
+  });
+
+  useEffect(() => {
+    const handleLoadedChanged = (loaded: boolean) => {
+      console.info('dynamicClient.sdk loaded', loaded);
+      setReadyState((prev) => ({ ...prev, sdkReady: loaded }));
+    };
+
+    const handleUserAuthenticated = async (user: any) => {
+      console.info('userAuthenticated', JSON.stringify(user, null, 2));
+      setReadyState((prev) => ({ ...prev, authChecked: true, authReady: true }));
+    };
+
+    const handleAuthenticatedUserChanged = async (auth: any) => {
+      console.info('authenticatedUserChanged', JSON.stringify(auth, null, 2));
+
+      if (auth == null) {
+        console.info('authenticatedUserChanged auth is null');
+        setReadyState((prev) => ({ ...prev, authChecked: true }));
+        return;
+      }
+
+      setReadyState((prev) => ({ ...prev, authChecked: true }));
+      setReadyState((prev) => ({ ...prev, authChecked: true, authReady: true }));
+    };
+
+    $dynamicClient.sdk.on('loadedChanged', handleLoadedChanged);
+    $dynamicClient.auth.setHandler('userAuthenticated', handleUserAuthenticated);
+    $dynamicClient.auth.on('authenticatedUserChanged', handleAuthenticatedUserChanged);
+
+    return () => {
+      // $dynamicClient.sdk.off('loadedChanged', handleLoadedChanged);
+      $dynamicClient.auth.off('authenticatedUserChanged', handleAuthenticatedUserChanged);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.info('useEffect - readyState', sReadyState);
+    if (!sReadyState.sdkReady) {
+      console.info('sdk not ready');
+      return;
+    }
+    if (!sReadyState.authChecked) {
+      console.info('auth not checked');
+      return;
+    }
+
+    if (!sReadyState.authReady) {
+      console.info('auth not ready');
+      return;
+    }
+
+    const goHome = async () => {
+      const walletAddress = dynamicXYZ.getPrimaryAddressOrNull();
+      if (walletAddress === null) {
+        console.info('walletAddress is null, route to index');
+        throw new Error('walletAddress is null');
+      }
+      hCtxWallet.updateCtx('walletAddress', walletAddress);
+      console.info('route to home-screen');
+      hRouter.replace({ pathname: '/home-screen', params: { walletAddress } });
+    };
+
+    goHome();
+  }, [sReadyState]);
+
+  console.info('RENDER app/index.tsx');
 
   return (
     <>
-      <Stack.Screen options={SCREEN_OPTIONS[colorScheme ?? 'light']} />
-      <View className="flex-1 items-center justify-center gap-8 p-4">
-        <Image source={LOGO[colorScheme ?? 'light']} style={IMAGE_STYLE} resizeMode="contain" />
-        <View className="gap-2 p-4">
-          <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
-            1. Edit <Text variant="code">app/index.tsx</Text> to get started.
-          </Text>
-          <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
-            2. Save to see your changes instantly.
-          </Text>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <SafeAreaView style={{ flex: 1 }}>
+        <View className="flex-1 items-center justify-center bg-[#4a735d]">
+          <Button
+            className="w-[50%]"
+            onPress={() => {
+              dynamicXYZ.login();
+            }}>
+            <Text>Login</Text>
+          </Button>
         </View>
-        <View className="flex-row gap-2">
-          <Link href="https://reactnativereusables.com" asChild>
-            <Button>
-              <Text>Browse the Docs</Text>
-            </Button>
-          </Link>
-          <Link href="https://github.com/founded-labs/react-native-reusables" asChild>
-            <Button variant="ghost">
-              <Text>Star the Repo</Text>
-              <Icon as={StarIcon} />
-            </Button>
-          </Link>
-        </View>
-      </View>
+        <LoadingOverlay visible={!sReadyState.authChecked || !sReadyState.sdkReady} />
+      </SafeAreaView>
     </>
-  );
-}
-
-const THEME_ICONS = {
-  light: SunIcon,
-  dark: MoonStarIcon,
-};
-
-function ThemeToggle() {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
-
-  return (
-    <Button
-      onPressIn={toggleColorScheme}
-      size="icon"
-      variant="ghost"
-      className="rounded-full web:mx-4">
-      <Icon as={THEME_ICONS[colorScheme ?? 'light']} className="size-5" />
-    </Button>
   );
 }
