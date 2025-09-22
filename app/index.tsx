@@ -4,7 +4,6 @@ import { LoadingOverlay } from '@/components/ui/loading-overlay';
 import { Text } from '@/components/ui/text';
 import { useCtxWallet } from '@/context/wallet-context';
 import { dynamicXYZ } from '@/lib/dynamic-utils';
-import { cn } from '@/lib/utils';
 import { Stack, useRouter } from 'expo-router';
 import * as React from 'react';
 import { useEffect, useState } from 'react';

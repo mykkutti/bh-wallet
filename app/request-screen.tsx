@@ -5,7 +5,7 @@ import { Const } from '@/config/const';
 import { useCtxWallet } from '@/context/wallet-context';
 import { ASSERT } from '@/lib/assert';
 import { validateDecimalAmount } from '@/lib/utils';
-import { parseUnits } from 'ethers';
+import { parseUnits } from 'viem';
 import { Stack, useRouter } from 'expo-router';
 import * as React from 'react';
 import { useState } from 'react';

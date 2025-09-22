@@ -1,29 +1,25 @@
 import { Button } from '@/components/ui/button';
+import { LoadingOverlay } from '@/components/ui/loading-overlay';
 import { Text } from '@/components/ui/text';
 import { useCtxWallet } from '@/context/wallet-context';
-import { ASSERT } from '@/lib/assert';
 import { dynamicXYZ } from '@/lib/dynamic-utils';
-import { fetchMarketPrice } from '@/lib/rpc';
+import { fetchTokenPrice } from '@/lib/rpc';
 import { cn, shortAddress } from '@/lib/utils';
-import { formatUnits } from 'ethers';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface MarketPrice {
-  decimal: string;
-  frac: string;
-}
+import { formatUnits } from 'viem';
 
 export default function HomeScreen() {
   const { walletAddress } = useLocalSearchParams<{ walletAddress: string }>();
+  const [sLoading, setLoading] = useState(false);
 
   const hCtxGlobal = useCtxWallet();
   const hRouter = useRouter();
   const [sBalance, setBalance] = useState<string>();
-  const [sMarketPrice, setMarketPrice] = useState<MarketPrice>();
+  const [sMarketPrice, setMarketPrice] = useState<string>();
 
   const shortWalletAddress = useMemo(() => {
     console.info('walletAddress', walletAddress);
@@ -34,36 +30,58 @@ export default function HomeScreen() {
     return shortAddress(walletAddress ?? '');
   }, [walletAddress]);
 
-  const updateBalance = React.useCallback(async () => {
+  // balance를 재조회
+  const refetchBalance = React.useCallback(async () => {
+    console.info('refetchBalance begin');
+    let myBalance: string = '';
     try {
-      console.info('updateBalance begin');
-      ASSERT(walletAddress !== null, 'walletAddress is null');
-      const myBalance = await dynamicXYZ.getVestBalance(walletAddress);
+      setLoading(true);
+      myBalance = await dynamicXYZ.getVestBalance(walletAddress);
+    } catch (error) {
+    } finally {
+      setLoading(false);
+    }
+
+    await changeBalance(myBalance);
+  }, []);
+
+  // balance가 변경됬을때 UI 업데이트
+  const changeBalance = React.useCallback(async (myBalance: string) => {
+    setLoading(true);
+    try {
+      console.info('changeBalance begin');
       console.info('myBalance', myBalance);
-      const myBalanceFormatted = formatUnits(myBalance, 18);
+      const myBalanceFormatted = formatUnits(BigInt(myBalance), 18);
       console.info('myBalanceFormatted', myBalanceFormatted);
       setBalance(myBalanceFormatted);
 
       hCtxGlobal.updateCtx('balance', myBalance);
+
+      const usd = await fetchTokenPrice();
+      const price = parseFloat(myBalanceFormatted) * usd;
+      setMarketPrice(price.toFixed(3));
     } catch (error) {
       console.error('Failed to update balance:', error);
       setBalance('0');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    updateBalance();
+    if (hCtxGlobal.ctx.balance == null) {
+      return;
+    }
+    changeBalance(hCtxGlobal.ctx.balance ?? '0');
   }, [hCtxGlobal.ctx.balance]);
+
+  useEffect(() => {
+    refetchBalance();
+  }, []);
 
   // 1000000_000000000000000000;
 
-  useEffect(() => {
-    updateBalance();
-
-    fetchMarketPrice().then((price) => {
-      setMarketPrice(price);
-    });
-  }, []);
+  // useFocusEffect(React.useCallback(() => {}, []));
 
   return (
     <>
@@ -86,8 +104,7 @@ export default function HomeScreen() {
                 className={cn('flex-row items-center', sMarketPrice ? 'opacity-1' : 'opacity-0')}>
                 <Text className="text-[32px]">$</Text>
                 <View className="flex-row items-baseline">
-                  <Text className="text-[40px]">{sMarketPrice?.decimal ?? ''}</Text>
-                  <Text className="text-[36px]">.{sMarketPrice?.frac ?? ''}</Text>
+                  <Text className="text-[40px]">{sMarketPrice ?? ''}</Text>
                 </View>
               </View>
               <Text className="text-[14px]">{`${sBalance} VEST`}</Text>
@@ -107,16 +124,23 @@ export default function HomeScreen() {
                 }}>
                 <Text className="text-[14px] text-[black]">Request</Text>
               </Button>
-              {/* <Button
+              <Button
                 className="h-[48px] bg-white"
                 onPress={() => {
-                  $dynamicClient.auth.logout();
+                  // $dynamicClient.auth.logout();
+                  // dynamicXYZ.getVestBalance(Const.testAddress.shchoi82);
+                  // fetch('https://naver.com').then((res) => {
+                  //   console.info('res', res);
+                  // });
+
+                  refetchBalance();
                 }}>
-                <Text className="text-[14px] text-[black]">Logout</Text>
-              </Button> */}
+                <Text className="text-[14px] text-[black]">Refresh</Text>
+              </Button>
             </View>
           </View>
         </View>
+        <LoadingOverlay visible={sLoading} />
       </SafeAreaView>
     </>
   );

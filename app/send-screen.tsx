@@ -122,7 +122,7 @@ export default function SendScreen() {
                   color={'white'}
                   size={30}
                   onPress={() => {
-                    hRouter.push('/qr-scaner-screen');
+                    hRouter.push('/qr-scanner-screen');
                   }}
                 />
               </View>

@@ -50,11 +50,11 @@ const vestAbi = [
 export const Const = {
   // UI 설정
   $bgColor,
-  
+
   // 스마트 컨트랙트 관련
   vestAbi,
   testAdminWalletAddress,
-  
+
   // 딥링크 URL 스키마
   urlScheme: 'hb-wallet://',
 
@@ -63,13 +63,18 @@ export const Const = {
     // Ethereum Sepolia 테스트넷 설정
     chainID: 11155111,
     name: 'Sepolia',
-    rpc: 'https://eth-sepolia.public.blastapi.io',
+    rpc: 'https://1rpc.io/sepolia',
+    // rpc: 'https://eth-sepolia.public.blastapi.io',
+    // rpc: 'https://rpc.sepolia.org',
+    // rpc: 'https://ethereum-sepolia.publicnode.com',
+    // rpc: 'https://sepolia.drpc.org',
     tokenContractAddress: '0x373280fc29834E414611b49349AC31b1F9B6008d' as `0x${string}`,
     tokenDecimals: 18,
-    
+
     // 이전 네트워크 설정 (주석 처리됨)
     // chainID: 2201,
     // name: 'Stable Testnet',
+    // tokenContractAddress: '0x1c11Ab80bF376E1D8914223ba81865243b34242c' as `0x${string}`,
     // rpc: 'https://stable-jsonrpc.testnet.chain0.dev/',
   },
 
