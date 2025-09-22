@@ -1,4 +1,4 @@
-# HB Wallet
+# Wallet
 
 React Native 기반의 VEST 토큰 전용 암호화폐 지갑 앱
 
