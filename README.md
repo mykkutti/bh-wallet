@@ -46,7 +46,7 @@ npx expo run ios -d
 
 ## etc
 - 상태관리로 zustand를 주로 사용하지만 여기에서는 복잡한상태관리가 필요하진않아 라이브러리를 설치하지않고 Context로 처리함
-- rpc 호출처리는 tanstack query를 사용해 캐싱처리 재시도처리를 이용하지만 여기서는 간단히 fetch 로 구현
+- rpc 호출처리는 tanstack query를 사용해 캐싱처리 재시도처리를 주로 개방했었지만 여기서는 간단히 fetch 로 구현
 - ui 는 별도의 라이브러리 없이 react native reusables 를 사용함 유연하게 커스터마이징 가능
 - expo 54는 최신이라 unknown 이슈등이 있을수있어 문제에 집중하기위해 53으로 진행
 - todo 앱이 기동중이지 않을때도 딥링크처리도 가능하게 하면 편리할듯 미구현함 
